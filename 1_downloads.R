@@ -1,6 +1,5 @@
 library(Biostrings)
 
-
 ## ITS1 search
 ## http://itsonedb.cloud.ba.infn.it/
 
@@ -167,7 +166,6 @@ X16SURLs <- paste0("https://www.ebi.ac.uk/ena/browser/api/fasta/search?query=tax
 X16SFiles <- paste0('/SAN/db/ENA_marker/16S_Euk/', pages16S, '.fasta')
 
 commands16S <- paste0("wget -O ", X16SFiles, " -X GET ", "\'", X16SURLs, "\'")
-
 
 if("16S"%in%download){
     resultsList16S <- list()
