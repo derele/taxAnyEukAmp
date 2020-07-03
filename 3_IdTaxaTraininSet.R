@@ -1,3 +1,4 @@
+library(ShortRead)
 
 Cleaned18S <- X18SFullLength[
     !names(X18SFullLength)%in%badTaxaSeq &
@@ -40,8 +41,8 @@ removeNormData <- normalizeBigGroups(TaxonomyDNAStringSet)
 ## of DECIPHER. We do this recursively but also exhaustively!
 
 rmSeqs <- list()
-rmSeqs[[1]] <- which(removeNormData) ## first are the results of
-                                     ## normilizstion
+rmSeqs[[1]] <- which(removeNormData) ## first to remove are the
+                                     ## results of normilizstion
 
 continue <- TRUE
 tSetList <- list()
@@ -51,10 +52,31 @@ while(continue){
     allrm <- unlist(rmSeqs)
     tSetList[[i]] <- LearnTaxa(Cleaned18S[-allrm], 
                                TaxonomyDNAStringSet[-allrm])
-    rmSeqs[[i+1]] <- tSetList[[i]]$problemSequences$Index
-    if(length(rmSeqs[[i+1]]) < 100) {
+    ## make the new indices relative to the overall dataset
+    orig.idx.before <- seq_len(length(Cleaned18S))[-allrm]
+    orig.idx.to.rm <- orig.idx.before[tSetList[[i]]$problemSequences$Index]
+    rmSeqs[[i+1]] <- orig.idx.to.rm
+    if(length(rmSeqs[[i+1]]) < 10) {
         continue <- FALSE
     }
     i <- i+1
+    cat("\nrep", i, "removing", length(rmSeqs[[i]]), "sequences", 
+        "\nhead:", head(rmSeqs[[i]]), "\ntail:", tail(rmSeqs[[i]]), "\n")
 }
+
+## that's the latest classifier
+tSetList[[16]]
+
+length(allrm)
+
+## these last 9 we didn't add to the removal list
+## rmSeqs[[17]]
+
+## allrmfinal <- unlist(rmSeqs)
+
+finalFL18S <- Cleaned18S[-allrm]
+
+writeFasta(finalFL18S, "/SAN/db/blastdb/18S_ENA/Full_length_1700.fasta")
+
+
 
