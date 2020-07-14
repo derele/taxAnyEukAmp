@@ -15,6 +15,9 @@ removeBadSeq <- function (DNAStringSet, min.length=0){
 ## also make them "full length"
 X18SFullLength <- removeBadSeq(X18Seq, 1700)
 
+## or not
+X18SALL <- removeBadSeq(X18Seq, 300)
+
 
 ## Use the accession as name in the  DNAStringSet
 getAccessions <- function(ENAnames){
@@ -23,11 +26,14 @@ getAccessions <- function(ENAnames){
 
 ## rename with the accessions
 names(X18SFullLength) <- getAccessions(names(X18SFullLength))
+names(X18SALL) <- getAccessions(names(X18SALL))
 
 ## exclude duplicates
 X18SFullLength <- X18SFullLength[!duplicated(names(X18SFullLength))]
+X18SALL <- X18SALL[!duplicated(names(X18SALL))]
 
 TaxIDS <- accessionToTaxa(names(X18SFullLength), "/SAN/db/taxonomy/taxonomizr.sql")
+TaxIDSALL <- accessionToTaxa(names(X18SALL), "/SAN/db/taxonomy/taxonomizr.sql")
 
 ## exclude wonky taxa (uncultured and other "badly" annotated)
 getTaxaBlackList <- function(taxids, maxN=10, allowedNA=3, allowSpeciesNA=FALSE){
@@ -42,85 +48,78 @@ getTaxaBlackList <- function(taxids, maxN=10, allowedNA=3, allowSpeciesNA=FALSE)
 
 ## a vector of "bad" taxids 
 badTaxa <- getTaxaBlackList(TaxIDS)
-
 badTaxaSeq <- names(X18SFullLength[TaxIDS%in%badTaxa])
+
+badTaxaALL <- getTaxaBlackList(TaxIDSALL)
+badTaxaSeqALL <- names(X18SALL[TaxIDSALL%in%badTaxaALL])
 
 ## now working on taxa with multiple sequences ...
 ## to see which ones can be excluded
-nSeqTax <- table(TaxIDS[!TaxIDS%in%badTaxa])
 
-repSeqTax <- names(nSeqTax[nSeqTax>1])
+getMatrices <- function (Tids, DNAdata) { 
+    nSeqTax <- table(Tids)
+    repSeqTax <- names(nSeqTax[nSeqTax>1])
+    DmatList <- mclapply(repSeqTax, function (spec){
+        specSeq <- DNAdata[Tids%in%spec]
+        alnSpecSeq <- AlignSeqs(specSeq)
+        DistanceMatrix(alnSpecSeq)
+    }, mc.cores=20)
 
-DmatList <- mclapply(repSeqTax, function (spec){
-    specSeq <- X18SFullLength[TaxIDS%in%spec]
-    alnSpecSeq <- AlignSeqs(specSeq)
-    DistanceMatrix(alnSpecSeq)
-}, mc.cores=20)
+    names(DmatList) <- repSeqTax
+    DmatList
+}
 
-names(DmatList) <- repSeqTax
+DmatList <- getMatrices(TaxIDS[!TaxIDS%in%badTaxa],
+                        X18SFullLength)
+
+DmatListALL <- getMatrices(TaxIDSALL[!TaxIDSALL%in%badTaxaALL],
+                           X18SALL)
 
 ## exclude outlier sequences above a certain distance ## outliers can
 ## be found in matrices (above 2, 2 dimension) by a static cutoff
-cutoff <- 0.1
-## quant <- 0.5
-
-outliersList <- lapply(DmatList, findOutliers, cutoff=cutoff)
-
-## for a quartile distance based cutoff
-### outliersList <- lapply(DmatList, findOutliers, quant=quant) 
-
-## this many outliers exist for this many taxa:
-table(unlist(outliersList))
-with.outliers <- unlist(lapply(outliersList, any))
-table(with.outliers)
-## but not if are only 2x2 matrices with only two sequences not clear
-## which one is the outlier
-twos <- unlist(lapply(DmatList, function (x) dim(x)[[1]]==2))
-table(twos, with.outliers)
-
-### we can't do anything against the outlers in 2x2 matrices
-table(twos, with.outliers)
-
-outliers <- unlist(lapply(outliersList[!twos], function (x) names(x)[x]))
-
-## Looking for off diagonal zeros! And then mark all but the one of
-## them for removal
 
 
-#### Sometimes it just takes some understanding...
-## IdClusters: Cluster Sequences By Distance or Sequence
-## In DECIPHER: Tools for curating, analyzing, and manipulating biological sequences 
-subsequencesList <- mclapply(DmatList, function (mat) { 
-    clusters <- IdClusters(mat, cutoff=0)
-    clustersList <- by(clusters, clusters$cluster, rownames)
-    cSubS <- lapply(clustersList, function(x) {
-        targetSeq <- X18SFullLength[x]
-        seqlength <- width(targetSeq)
-        ## select only the first longest sequence (in case of multiple longest)
-        good <- which(seqlength == max(seqlength))[1]
-        one.good <- names(targetSeq)[good]
-        ## blacklist of the "bad" subsequnces
-        names(targetSeq)[!names(targetSeq)%in%one.good]
-    })
-    unlist(cSubS)
-}, mc.cores=20)
+getOutliers <- function (matices, cutoff=0.1){
+    outliersList <- lapply(DmatList, findOutliers, cutoff=cutoff)
+    ## for a quartile distance based cutoff
+    ## outliersList <- lapply(DmatList, findOutliers, quant=quant) 
+    ## this many outliers exist for this many taxa:
+    with.outliers <- unlist(lapply(outliersList, any))
+    ## but not if are only 2x2 matrices with only two sequences not clear
+    ## which one is the outlier
+    twos <- unlist(lapply(DmatList, function (x) dim(x)[[1]]==2))
+    ## we can't do anything against the outlers in 2x2 matrices
+    unlist(lapply(outliersList[!twos], function (x) names(x)[x]))
+}
+
+outliers <- getOutliers(DmatList)
+
+outliersALL <- getOutliers(DmatListALL)
+
+## identify sorther sequences which are a subset fo longer ones
+
+getSubsequeces <- function(matrices, DNAdata){ 
+    subsequencesList <- mclapply(matrices, function (mat) { 
+        clusters <- IdClusters(mat, cutoff=0)
+        clustersList <- by(clusters, clusters$cluster, rownames)
+        cSubS <- lapply(clustersList, function(x) {
+            targetSeq <- DNAdata[x]
+            seqlength <- width(targetSeq)
+            ## select only the first longest sequence (in case of multiple longest)
+            good <- which(seqlength == max(seqlength))[1]
+            one.good <- names(targetSeq)[good]
+            ## blacklist of the "bad" subsequnces
+            names(targetSeq)[!names(targetSeq)%in%one.good]
+        })
+        unlist(cSubS)
+    }, mc.cores=20)
+    unlist(subsequencesList)
+}
       
-subsequences <- unlist(subsequencesList)
+subsequences <-  getSubsequeces(DmatList, X18SFullLength)
+
+subsequencesALL <-  getSubsequeces(DmatListALL, X18SALL)
 
 
-foo <- data.frame(badTax=names(X18SFullLength)%in%badTaxaSeq, 
-                  outlier=names(X18SFullLength)%in%outliers, 
-                  subsequence=names(X18SFullLength)%in%subsequences)
-
-bar <- as.data.frame(apply(foo, 2, as.numeric))
-rownames(bar) <- 1:nrow(bar)
-
-upset(bar)
-
-Cleaned18S <- X18SFullLength[
-    !names(X18SFullLength)%in%badTaxaSeq &
-    !names(X18SFullLength)%in%outliers &
-    !names(X18SFullLength)%in%subsequences
-] 
 
 
