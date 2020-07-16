@@ -1,24 +1,55 @@
 # taxAnyEukAmp
+
+Create a taxnomy database for any (Eukaryote) amplicon
+
 ## Taxonomy annotation for any Eukaryote amplicon
 
-Marker sequences are downloaded from ENA marker search and downloaded
-files read into Biostring "DNAStringSet instances" for subsequent
-work.
+This package can build a datbase from genetic marker sequences for
+taxomic annotation. It focuses on markers for Eukaryote taxa but can
+in principle also be used for Prokaryotes. Sequence databases for to
+annotate Eukaryote marker seqeunces with taxonomy are currently not
+available in a comprehensive form. This package can be used to create
+them. Typical markers employed are ribosomal RNA subunits (small and
+large; nuclear and mitochondrial 18S, 28S, 12S and 16S) and Cytochrome
+C oxidase subunit I (COI), for those we provide workflows and readiely
+constructed databases. For others (e.g. other mitochondrially encoded
+genes) those workflows are directly transferrable.
+
+The package provides very high level functions to make this quite
+easy. So let's jump right into it: 
+
+## Install
+```r
+require(devtools)
+devtools::install_github("derele/taxAnyEukAmp")
+```
+
+### Download of maker seqeunces for ENA
+
+Marker sequences are downloaded from European nucleotide archive (ENA)
+marker search. ENA has indexed their databases using hidden markov
+models. This allows the retrieval of marker sequences beyond the
+identification given in the sequence description (e.g. also
+subsequences from complete genomes, etc.). This function downloads
+these marker sequences. 
 
 ```r
 X18SDownloads <- getENAdownloads("18S", "/SAN/db/ENA_marker/18S/")
+```
+Downloaded files can be read into Biostring "DNAStringSet instances"
+for subsequent work.
 
+```r
 X18Seq <- Biostrings::readDNAStringSet(X18SDownloads[[1]])
-
-## how many are recovered
-length(X18Seq) - X18SDownloads[[3]] 
-## we are missing 12k approximately
-summary(width(X18Seq)>100)
-
 ```
 
+Before download the function also queries the database for the number
+of sequends available and returns this number, so we can compare
+whether all were downloaded sucessfully
 
-
+```r
+length(X18Seq) - X18SDownloads[[3]] ## we
+```
 
 
 - "2_uniqueSubSeq.R":
