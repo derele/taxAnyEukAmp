@@ -1,4 +1,5 @@
 library(Biostrings)
+library(RCurl)
 
 ## ITS1 search
 ## http://itsonedb.cloud.ba.infn.it/
@@ -16,166 +17,110 @@ download <- c(
     FALSE
     )
 
-## We do this programmatically via THE NEW INTERFACE to ENA (2020)
-## marker search FASTA, e.g.:
-## "https://www.ebi.ac.uk/ena/browser/api/fasta/search?query=marker=%2218S%22&result=noncoding_release&fields=accession,marker,rna_class&limit=100"
 
-
-
-## ##### 18S: how many released sequences on 05/27/2020
-
-## curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'result=noncoding_release&query=marker%3D%2218S%22&limit=1000000000&format=tsv' "https://www.ebi.ac.uk/ena/portal/api/search" | wc -l
-
-## 1170464
-## because of paging we have to get chunks of 100,000 sequences
-pages18S <- seq(0, 1170464, by=100000)
-pages18S <- format(pages18S, digits=16, trim=TRUE, scientific=FALSE)
-
-X18SURLs <- paste0("https://www.ebi.ac.uk/ena/browser/api/fasta/search?query=marker=%2218S%22&result=noncoding_release&limit=100000&offset=", pages18S)
-
-X18SFiles <- paste0('/SAN/db/ENA_marker/18S/', pages18S, '.fasta')
-
-commands18S <- paste0("wget -O ", X18SFiles, " -X GET ", "\'", X18SURLs, "\'")
-
-if("18S"%in%download){
-    resultsList18S <- list()
-    for(i in seq_along(commands18S)){
-        resultsList18S[[i]] <- system(commands18S[[i]])
-    }
-    names(resultsList18S) <- pages18S
-    table(unlist(resultsList18S)==0)
+## general function to get number of ENA released sequences
+getENAsequenceCount <- function(marker, data="noncoding_release", freequery="") { 
+    countURL <- "https://www.ebi.ac.uk/ena/portal/api/count"
+    Copts <- curlOptions(verbose = TRUE, # to debug
+                         header = "Content-Type: application/x-www-form-urlencoded")
+    query=paste0(freequery, "marker%3D%22", marker, "%22")
+    countRes <- RCurl::postForm(uri=countURL, 
+                                .opts=Copts,
+                                query=query,
+                                result=data,
+                                style= "POST")
+    as.numeric(countRes)
 }
 
-X18Seq <- Biostrings::readDNAStringSet(X18SFiles)
-## "lost" only about 13,000 records 
 
-## and many sequences are recoverd
+
+getENAdownloads <- function(marker,
+                            downloadDir,
+                            data="noncoding_release",
+                            paging="100000",
+                            freequery=""){
+    count <- getENAsequenceCount(marker, data=data, freequery=freequery)
+    pages <- seq(0, count, by=100000)
+    pages <- format(pages, digits=16, trim=TRUE, scientific=FALSE)
+    URLs <- paste0("https://www.ebi.ac.uk/ena/browser/api/fasta/search?",
+                   "query=",freequery ,
+                   "marker=%22", marker,
+                   "%22&result=", data,
+                   "&limit=", paging,
+                   "&offset=", pages)
+    files <- paste0(downloadDir, marker, "_", pages, '.fasta')
+    if(all(file.exists(files))){
+        message("files in ", downloadDir, " exist!\n",
+                "Returning names of existing files,",
+                "but new URLs and new counts for the number of sequences in ENA, ",
+                "in case of discrepanicies you may want to", 
+                "delete files or give different downloadDir to repeat the download!\n"
+                )
+        return(list(files=files, URLs=URLs, should_be=count))
+    }
+    if (sum(file.exists(files))>0){
+        stop("some files in ", downloadDir, " exist, ",
+             "but don't match the number or names of files expected from a new download, ",
+             "delete files or give different downloadDir to repeat the download!\n"
+             )
+    } else {
+        for(i in seq_along(URLs)){
+            download.file(URLs[[i]], files[[i]])
+        }
+    }
+    list(files=files, URLs=URLs, should_be=count)
+}
+
+X18SDownloads <- getENAdownloads("18S", "/SAN/db/ENA_marker/18S/")
+
+X18Seq <- Biostrings::readDNAStringSet(X18SDownloads[[1]])
+
+## how many are recovered
+length(X18Seq) - X18SDownloads[[3]] 
+## we are missing 12k approximately
 summary(width(X18Seq)>100)
 
 
 ## ##### 28S: how many released sequences on 05/27/2020
 
-## curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'result=noncoding_release&query=marker%3D%2228S%22&limit=1000000000&format=tsv' "https://www.ebi.ac.uk/ena/portal/api/search" | wc -l
+X28SDownloads <- getENAdownloads("28S", "/SAN/db/ENA_marker/28S/")
+X28Seq <- Biostrings::readDNAStringSet(X28SDownloads[[1]])
 
-## Only 120474
-## because of paging we have to get chunks of 100,000 sequences
-pages28S <- seq(0, 120474, by=100000)
-pages28S <- format(pages28S, digits=16, trim=TRUE, scientific=FALSE)
-
-X28SURLs <- paste0("https://www.ebi.ac.uk/ena/browser/api/fasta/search?query=marker=%2228S%22&result=noncoding_release&limit=100000&offset=", pages28S)
-
-X28SFiles <- paste0('/SAN/db/ENA_marker/28S/', pages28S, '.fasta')
-
-commands28S <- paste0("wget -O ", X28SFiles, " -X GET ", "\'", X28SURLs, "\'")
-
-
-if("28S"%in%download){
-    resultsList28S <- list()
-    for(i in seq_along(commands28S)){
-        resultsList28S[[i]] <- system(commands28S[[i]])
-    }
-    names(resultsList28S) <- pages28S
-    table(unlist(resultsList28S)==0)
-}
-
-X28Seq <- Biostrings::readDNAStringSet(X28SFiles)
-## "lost" only about 13,000 records 
-
-## and many sequences are recoverd
+## and how many sequences are recoverd
+length(X28Seq) - X28SDownloads[[3]] 
 summary(width(X28Seq)>100)
 
-## ##### COI: how many released sequences on 05/27/2020
+### COI or COX1 in ENA terms
 
-## curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'result=coding_release&query=marker%3D%22COX1%22&limit=1000000000&format=tsv' "https://www.ebi.ac.uk/ena/portal/api/search" | wc -l
+COIDownloads <- getENAdownloads("COX1", "/SAN/db/ENA_marker/COI/", "coding_release")
+COISeq <- Biostrings::readDNAStringSet(COIDownloads[[1]])
 
-## 3481122
-
-pagesCOI <- seq(0, 3481122, by=100000)
-pagesCOI <- format(pagesCOI, digits=16, trim=TRUE)
-
-COIURLs <- paste0("https://www.ebi.ac.uk/ena/browser/api/fasta/search?query=marker=%22COX1%22&result=coding_release&limit=100000&offset=", pagesCOI)
-
-COIFiles <- paste0('/SAN/db/ENA_marker/COI/', pagesCOI, '.fasta')
-
-commandsCOI <- paste0("wget -O ", COIFiles, " -X GET ", "\'", COIURLs, "\'")
-
-if("COI"%in%download){
-    resultsListCOI <- list()
-    for(i in seq_along(commandsCOI)){
-        resultsListCOI[[i]] <- system(commandsCOI[[i]])
-    }
-    table(unlist(resultsListCOI)==0)
-}
-
-COISeq <- Biostrings::readDNAStringSet(COIFiles)
-## 3 sequences more than records??!!!
-
-## and many sequences are recoverd
+## and how many sequences are recoverd
+length(COISeq) - COIDownloads[[3]] 
 summary(width(COISeq)>100)
-summary(width(COISeq)>500)
-## and most are "proper"
 
+### 12S 
+X12SDownloads <- getENAdownloads("12S", "/SAN/db/ENA_marker/12S/")
+X12Seq <- Biostrings::readDNAStringSet(X12SDownloads[["files"]])
 
-## ##### 12S: how many released sequences on 05/28/2020
+## how many recoverd
+length(X12Seq) - X12SDownloads[[3]] 
 
-## curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'result=noncoding_release&query=marker%3D%2212S%22&limit=1000000000&format=tsv' "https://www.ebi.ac.uk/ena/portal/api/search" | wc -l
-
-## 263377
-
-pages12S <- seq(0, 263377, by=100000)
-pages12S <- format(pages12S, digits=16, scientific=FALSE, trim=TRUE)
-
-X12SURLs <- paste0("https://www.ebi.ac.uk/ena/browser/api/fasta/search?query=marker=%2212S%22&result=noncoding_release&limit=100000&offset=", pages12S)
-
-X12SFiles <- paste0('/SAN/db/ENA_marker/12S/', pages12S, '.fasta')
-
-commands12S <- paste0("wget -O ", X12SFiles, " -X GET ", "\'", X12SURLs, "\'")
-
-
-if("12S"%in%download){
-    resultsList12S <- list()
-    for(i in seq_along(commands12S)){
-        resultsList12S[[i]] <- system(commands12S[[i]])
-    }
-
-    table(unlist(resultsList12S)==0)
-}
-
-X12Seq <- Biostrings::readDNAStringSet(X12SFiles)
-## 3 sequences more than records??!!!
-
-## and only lost one sequence!
-## 263376- 263377
 table(width(X12Seq)>100)
 table(width(X12Seq)>500)
 table(width(X12Seq)<1200)
 ## and most are "proper"
 
 
-## Eukaryote (mitochondrial) 16S
+## Eukaryote (mitochondrial) 16S, providing the eukaryote taxonomy as
+## limit for the search
+X16SDownloads <- getENAdownloads("16S", "/SAN/db/ENA_marker/16S_Euk/",
+                                 freequery="tax_tree(2759)%20AND%20")
 
-## curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'result=noncoding_release&query=tax_tree(2759)%20AND%20marker%3D%2216S%22&limit=1000000000&format=tsv' "https://www.ebi.ac.uk/ena/portal/api/search" | wc -l
 
-## 489567
+X16Seq <- Biostrings::readDNAStringSet(X16SDownloads[["files"]])
 
-pages16S <- seq(0, 489567, by=100000)
-pages16S <- format(pages16S, digits=16, scientific=FALSE, trim=TRUE)
-
-X16SURLs <- paste0("https://www.ebi.ac.uk/ena/browser/api/fasta/search?query=tax_tree(2759)%20AND%20marker=%2216S%22&result=noncoding_release&limit=100000&offset=", pages16S)
-
-X16SFiles <- paste0('/SAN/db/ENA_marker/16S_Euk/', pages16S, '.fasta')
-
-commands16S <- paste0("wget -O ", X16SFiles, " -X GET ", "\'", X16SURLs, "\'")
-
-if("16S"%in%download){
-    resultsList16S <- list()
-    for(i in seq_along(commands16S)){
-        resultsList16S[[i]] <- system(commands16S[[i]])
-    }
-    table(unlist(resultsList16S)==0)
-}
-
-X16Seq <- Biostrings::readDNAStringSet(X16SFiles)
+length(X16Seq) - X16SDownloads[["should_be"]]
 ## 3 sequences more than records??!!!
 
 ## and only lost one sequence!
