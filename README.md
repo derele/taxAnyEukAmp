@@ -1,12 +1,24 @@
 # taxAnyEukAmp
 ## Taxonomy annotation for any Eukaryote amplicon
 
-- "1_downloads.R":
-
 Marker sequences are downloaded from ENA marker search and downloaded
 files read into Biostring "DNAStringSet instances" for subsequent
-work. This script allows to either use a stored copy of the file or
-to re-run the download.
+work.
+
+```r
+X18SDownloads <- getENAdownloads("18S", "/SAN/db/ENA_marker/18S/")
+
+X18Seq <- Biostrings::readDNAStringSet(X18SDownloads[[1]])
+
+## how many are recovered
+length(X18Seq) - X18SDownloads[[3]] 
+## we are missing 12k approximately
+summary(width(X18Seq)>100)
+
+```
+
+
+
 
 
 - "2_uniqueSubSeq.R":
