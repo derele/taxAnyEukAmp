@@ -1,0 +1,14 @@
+Package: taxAnyEukAmp
+Title: Create a taxnomy database for any (Eukaryote) amplicon
+Version: 0.0.0.9000
+Authors@R: person("Emanuel", "Heitlinger", email = "emanuelheitlinger@gmail.com", role = c("aut", "cre"))
+Description: This package can build a datbase from genetic marker sequences for taxomic annotation. It focuses on markers for Eukaryote taxa but can in principle also be used for Prokaryotes. Sequence databases for to annotate Eukaryote marker seqeunces with taxonomy are currently not available in a comprehensive enough form. This package can be used to create them. Typical markers employed are ribosomal RNA subunits (small and large; nuclear and mitochondrial 18S, 28S, 12S and 16S) and Cytochrome C oxidase subunit I (COI), for those we provide workflows and readiely constructed databases. For others (e.g. other mitochondrially encoded genes) those workflows are directly transferrable. 
+Imports:
+    Biostrings (>= 2.42.0),
+    RCurl,
+    taxonomizr
+Depends:
+        R (>= 3.6.3)
+License: : GPL-3
+Encoding: UTF-8
+LazyData: true
