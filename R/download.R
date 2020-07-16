@@ -8,6 +8,7 @@
 ##' @param freequery terms in addtion to marker to be included included in the query (e.g. to limit the scope of the search to particular nodes in the taxonomy)
 ##' @return the number of sequences found for this marker search
 ##' @author Emanuel Heitlinger
+##' @importFrom RCurl curlOptions
 .getENAsequenceCount <- function(marker, data="noncoding_release", freequery="") { 
     countURL <- "https://www.ebi.ac.uk/ena/portal/api/count"
     Copts <- curlOptions(verbose = TRUE, # to debug
@@ -33,13 +34,14 @@
 ##' @param freequery terms in addtion to marker to be included included in the query (e.g. to limit the scope of the search to particular nodes in the taxonomy)
 ##' @return Returns a list containing filenames (files), the URLs the files were downloaded from (URLs) and the number of expected sequences in the database that should be downloaded (should_be)
 ##' @author Emanuel Heitlinger
+##' @importFrom utils download.file
 ##' @export
 getENAdownloads <- function(marker,
                             downloadDir,
                             data="noncoding_release",
                             paging="100000",
                             freequery=""){
-    count <- getENAsequenceCount(marker, data=data, freequery=freequery)
+    count <- .getENAsequenceCount(marker, data=data, freequery=freequery)
     pages <- seq(0, count, by=100000)
     pages <- format(pages, digits=16, trim=TRUE, scientific=FALSE)
     URLs <- paste0("https://www.ebi.ac.uk/ena/browser/api/fasta/search?",
