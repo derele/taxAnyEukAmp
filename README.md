@@ -24,7 +24,7 @@ require(devtools)
 devtools::install_github("derele/taxAnyEukAmp")
 ```
 
-### Download of maker sequences for ENA
+### Download of marker sequences for ENA
 
 Marker sequences are downloaded from European nucleotide archive (ENA)
 marker search. ENA has indexed their databases using hidden Markov
@@ -33,7 +33,9 @@ identification given in the sequence description (e.g. also
 sub-sequences from complete genomes, etc.). This function downloads
 these marker sequences. 
 
+
 ```S
+library(taxAnyEukAmp)
 X18SDownloads <- getENAdownloads("18S", "/SAN/db/ENA_marker/18S/")
 ```
 Downloaded files can be read into Biostring "DNAStringSet instances"
@@ -47,26 +49,45 @@ Before download the function also queries the database for the number
 of sequences available and returns this number, so we can compare
 whether all were downloaded successfully.
 
+In case all the expected files were already in the folder given for
+the download the function will only query the ENA for the number of
+sequences available. Especially in this case we should check how many
+sequences are available. 
+
 ```r
 length(X18Seq) - X18SDownloads[["should_be"]] 
 ```
 
-
 ### Curate the database
+
+As a basic design principle, we collect names (accession numbers) of
+sequences exclution when creating the database.
 
 #### Cleaning
 
-First a length threshold is specified allowing to either length filter
-or even create full length databases. A taxonomic annotation for each
-accession number is obtained via the taxnomizr R package and the NCBI
-taxonomy database.
+Sequences with bad charactersalignemnt)
+
+
+
+isACGT(as.character(X18Seq))
+
+
 
 #### Taxonomy curration
 
+A taxonomic annotation for each accession number is obtained via the
+taxnomizr R package and the NCBI taxonomy database.
+
+
+
+
+
 A list of taxa to exclude is created by tabulating the most abundant
-"species", setting "environmental", "uncultured" and "sp." annotations
-to NA and removing any taxa with eigher NA as species annotation or a
-defined number of (currently 3) NAs at any level of the taxonmy.
+"species" (or pseudo-species in case of "bad annotations", setting
+"environmental", "uncultured" and "sp." annotations to NA and removing
+any taxa with either NA as species annotations (if the arument
+speciesNArm is set to TRUE; the default), or a defined number of (by
+default 3) NAs at any level of the taxonmy.
 
 #### Sequence similarity curration
 

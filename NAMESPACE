@@ -2,4 +2,6 @@
 
 export(getENAdownloads)
 importFrom(RCurl,curlOptions)
+importFrom(Rcpp,sourceCpp)
 importFrom(utils,download.file)
+useDynLib(taxAnyEukAmp, .registration = TRUE)
