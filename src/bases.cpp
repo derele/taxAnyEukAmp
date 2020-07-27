@@ -3,12 +3,11 @@ using namespace Rcpp;
 
 // From dada2 by Benjamin J Callahan
 //------------------------------------------------------------------
-// Checks a vector of character sequences for whether they are entirely ACGT.
-//
-// @param seqs A \code{character} of candidate DNA sequences.
-// 
-// @return A \code{logical}. Whether or not each input character was ACGT only.
-// 
+//' Checks a vector of character sequences for whether they are entirely ACGT.
+//'
+//' @param seqs A \code{character} of candidate DNA sequences.
+//' @return A \code{logical}. Whether or not each input character was ACGT only.
+//' @export
 // [[Rcpp::export]]
 Rcpp::LogicalVector isACGT(std::vector<std::string> seqs) {
   unsigned int i, pos, strlen;

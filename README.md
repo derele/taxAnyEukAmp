@@ -54,7 +54,7 @@ the download the function will only query the ENA for the number of
 sequences available. Especially in this case we should check how many
 sequences are available. 
 
-```r
+```S
 length(X18Seq) - X18SDownloads[["should_be"]] 
 ```
 
@@ -67,10 +67,9 @@ sequences exclution when creating the database.
 
 Sequences with bad charactersalignemnt)
 
-
-
+```S
 isACGT(as.character(X18Seq))
-
+```
 
 
 #### Taxonomy curration
