@@ -8,6 +8,8 @@ Imports:
     RCurl,
     taxonomizr,
     DECIPHER,
+    parallel,
+    clstutils,
     Rcpp
 Depends:
         R (>= 3.6.0),

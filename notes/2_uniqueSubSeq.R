@@ -80,7 +80,7 @@ DmatListALL <- getMatrices(TaxIDSALL[!TaxIDSALL%in%badTaxaALL],
 
 
 getOutliers <- function (matices, cutoff=0.1){
-    outliersList <- lapply(DmatList, findOutliers, cutoff=cutoff)
+    outliersList <- lapply(DmatList, clsutils::findOutliers, cutoff=cutoff)
     ## for a quartile distance based cutoff
     ## outliersList <- lapply(DmatList, findOutliers, quant=quant) 
     ## this many outliers exist for this many taxa:
