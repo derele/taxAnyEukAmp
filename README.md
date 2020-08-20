@@ -89,53 +89,62 @@ duplicates <- duplicated(X18Seq)&duplicated(TaxIDs)
 ```
 
 Then we can obtain the full taxonomy path for all those taxids (again
-through the taxonomizr package). By default this comprises
+through the taxonomizr package). By default this comprises the ranks
 "superkingdom", "phylum", "class", "order", "family", "genus" and
-"species" levels. We identify "bad taxa" based on this. 
+"species" levels. We identify "bad taxa" based on this.
 
 
 ```S
 taxonomy <- taxonomizr::getTaxonomy(TaxIDs, "/SAN/db/taxonomy/taxonomizr.sql")
-badTaxa <- getBadTaxa(taxonomy)
+rownames(taxonomy) <- names(X18Seq)
+         
+badTaxa <- getBadTaxa(taxonomy, fromN=2)
 badSpecies <- getBadSpecies(taxonomy)         
 table(badTaxa, badSpecies)
 ```
 
-A list of taxa to exclude is created by tabulating the most abundant
-"species" (or pseudo-species in case of "bad annotations", setting
-"environmental", "uncultured" and "sp." annotations to NA and removing
-any taxa with either NA as species annotations (if the arument
-speciesNArm is set to TRUE; the default), or a defined number of (by
-default 3) NAs at any level of the taxonmy.
+Taxa to (potentialy) exclude are compiled created: 1) Allowing only
+for a maximal number of undefined ranks, optionally after declaring
+"environmental", "uncultured" and "sp."  (pseudo-) annotations as
+undfined (setting them to NA) and optionally only for the most
+abundant "species" (or pseudo-species in case of "bad
+annotations"). This is done by ```getBadTaxa```. 2) Highlighting taxa
+with undefined species annotations, again optionall after removing
+pseudo-annotations with ```getBadSpecies```.
+
+Which taxa are in this way excluded depends on the purpose of the
+created database. I generally tend to be more inclusive, i.e. to
+exclude only the most uniformative and most abundant pseudo-taxa.
 
 
-Here we can decide to only use sequneces for a certain length
-(i.e. when building a [close to] full length database). 
+After all this somewhat harder tasks we can in the next steps also
+simply decide to only use sequneces of a certain length (i.e. when
+building a [close to] full length database).
 
 ```S
 X18SClean <- X18Seq[!nonACGT & !duplicates & !badTaxa & !badSpecies &
-                    width(X18Seq)>1500]
+                    width(X18Seq)>1500] ## this excludes below 1500 bases
 
 taxonomyClean <- taxonomy[!nonACGT & !duplicates & !badTaxa & !badSpecies
                           & width(X18Seq)>1500, ]  
-        
 ```
 
 #### Sequence similarity curration
 
-
-Based on alignemts of (if available) multiple sequences for each
-speces: a) outlier sequences are removed if they have more than 10%
-nucleotide differences with the majority cluster of sequences. Then,
-b) full length sequences are made non-redundant by removing non unique
-sub sequences (including potential sub-sequences) for each
-species. This is performed only for identity clusters but could be
-changed to remove simlilar sub-sequences at a clustering threshold
-
+Taxonomic annotation databases are more easiely usable if they have a
+relatively low redundancy.  Based on alignemts of (if available)
+multiple sequences for each species, thus: a) outlier sequences are
+removed if they have more than a particular threshold of nucleotide
+differences (default 10%) with the majority cluster of
+sequences. Then, b) full length sequences are made non-redundant by
+removing non unique (sub-)sequences for each species. This is
+performed only for (100%) identity clusters but could be changed to
+remove simlilar sub-sequences at a clustering threshold
 
 
 ```S
 X18SMatrices <- getMatrices(X18SClean, taxonomyClean, mc.cores=20)
+
 outliers <- getOutliers(X18SMatrices)
 
 subsequences <- getSubsequeces(X18SMatrices, X18SClean, mc.cores=20)
@@ -145,19 +154,45 @@ table(outliers=names(X18SClean)%in%outliers,
 
 X18SCurated <- X18SClean[!names(X18SClean)%in%outliers &
                          !names(X18SClean)%in%subsequences]
-      
+
+taxonomyCurated <- taxonomyClean[!rownames(taxonomyClean)%in%outliers &
+                                 !rownames(taxonomyClean)%in%subsequences, ]
+
+                         
 ```
 
-Not that we obtain the sequence names here, this is to make sure that
-those sequences can be removed irrespective of the order of sequences
-(i.e. from the original and 
-
-
-
-
+Not that (in contrast to the procedure above, in which we just
+obtained an index for sequences to remove) we obtain the sequence
+names here. This is to make sure that those sequences can be removed
+irrespective of the order of sequences (i.e. from the original and/or
+the otherwise cleand datasets).
 
 
 ### IdTaxa (DECIPHER) curration and training set
 
 The DECIPHER pageage is used to train datsaets as classifiers. This
-allows the identification of "problem sequences".
+allows the identification of "problem sequences". The wrapper function
+below recursivel removes such problematic sequences until only cerain
+number ("badRetain") are left in the dataset.
+
+The function also "normalizes" the number of sequences for taxa with a
+large number of sequences to a certain number (normalizeSize; default
+10). If many such redundant sequenes for the same taxon have to be
+reomved consider screening your input data more stringently for
+subsequences, "bad taxa" or short sequences. 
+
+
+```
+IdTaxaResults <- idTaxaTrainAndClean(X18SCurated, 
+                                     taxonomyCurated,
+                                     badRetain=10)
+```
+
+Your final training data set is now found in ```IdTaxaResults[[3]]```
+the corresponding sequences in ```IdTaxaResults[[3]]``` can be writen
+to a fasta file to use them in other classification methods
+(e.g. BLAST, RDP, etc...).
+
+```
+writeFasta(IdTaxaResults[[1]], "/SAN/db/blastdb/18S_ENA/Full_length_1700.fasta")
+```
