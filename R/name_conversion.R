@@ -8,6 +8,6 @@
 ##' @return A string with the (NCBI) accession for a sequence
 ##' @export
 ##' @author Emanuel Heitlinger
-getAccession4ENAname <- function(ENAnames){
-    gsub("ENA\\|.*?\\|(.*?\\.\\d+):.*", "\\1", ENAnames)
+getAccession4ENAname <- function(ENAnames, COI=FALSE){
+    gsub("ENA\\|.*?\\|(.*?\\.\\d+).*", "\\1", ENAnames)
 }
