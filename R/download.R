@@ -55,7 +55,7 @@ getENAdownloads <- function(marker,
         message("files in ", downloadDir, " exist!\n",
                 "Returning names of existing files,",
                 "but new URLs and new counts for the number of sequences in ENA, ",
-                "in case of discrepanicies you may want to", 
+                "in case of discrepanicies you may want to ", 
                 "delete files or give different downloadDir to repeat the download!\n"
                 )
         return(list(files=files, URLs=URLs, should_be=count))
