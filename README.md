@@ -85,7 +85,7 @@ duplicated sequences for the same taxon.
 ```S
 accessions <- getAccession4ENAname(names(X18Seq))
 TaxIDs <- taxonomizr::accessionToTaxa(accessions, "/SAN/db/taxonomy/taxonomizr.sql")
-duplicates <- duplicated(X18Seq)&duplicated(TaxIDs)           
+duplicates <- duplicated(X18Seq) & duplicated(TaxIDs)           
 ```
 
 Then we can obtain the full taxonomy path for all those taxids (again
@@ -96,8 +96,12 @@ through the taxonomizr package). By default this comprises the ranks
 
 ```S
 taxonomy <- taxonomizr::getTaxonomy(TaxIDs, "/SAN/db/taxonomy/taxonomizr.sql")
-rownames(taxonomy) <- names(X18Seq)
-         
+
+X18Staxed <- createTaxedSeq(X18Seq, TaxIDs, taxonomy)
+
+### the object will take care...          
+### rownames(taxonomy) <- names(X18Seq)
+          
 badTaxa <- getBadTaxa(taxonomy, fromN=2)
 badSpecies <- getBadSpecies(taxonomy)         
 table(badTaxa, badSpecies)
