@@ -4,7 +4,7 @@
 \alias{getAccession4ENAname}
 \title{getAccession4ENAname}
 \usage{
-getAccession4ENAname(ENAnames)
+getAccession4ENAname(ENAnames, COI = FALSE)
 }
 \arguments{
 \item{ENAnames}{the full name of the (fasta) sequence in the ENA

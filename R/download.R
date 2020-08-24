@@ -25,14 +25,27 @@
 
 ##' Download marker sequences from ENA. 
 ##'
-##' ENA has indexed their databases using hidden markov models. This allows the retrieval of marker sequences beyond what is given in the sequence description (e.g. also subsequences from complete genomes, etc.). This function downloads these marker sequences
+##' ENA has indexed their databases using hidden markov models. This
+##' allows the retrieval of marker sequences beyond what is given in
+##' the sequence description (e.g. also subsequences from complete
+##' genomes, etc.). This function downloads these marker sequences
 ##' @title getENAdownloads
-##' @param marker The marker to be queried see https://www.ebi.ac.uk/ena/browse/marker-portal-rest
-##' @param downloadDir Directory into which the downloaded sequences are saved 
-##' @param data the database to be queried usually "noncoding_release", "coding_release" see https://www.ebi.ac.uk/ena/browser/advanced-search
-##' @param paging Downloads are broken down in into chunks. This is the chunk-size for this pageing.
-##' @param freequery terms in addtion to marker to be included included in the query (e.g. to limit the scope of the search to particular nodes in the taxonomy)
-##' @return Returns a list containing filenames (files), the URLs the files were downloaded from (URLs) and the number of expected sequences in the database that should be downloaded (should_be)
+##' @param marker The marker to be queried see
+##'     https://www.ebi.ac.uk/ena/browse/marker-portal-rest
+##' @param downloadDir Directory into which the downloaded sequences
+##'     are saved
+##' @param data the database to be queried usually
+##'     "noncoding_release", "coding_release" see
+##'     https://www.ebi.ac.uk/ena/browser/advanced-search
+##' @param paging Downloads are broken down in into chunks. This is
+##'     the chunk-size for this pageing.
+##' @param freequery terms in addtion to marker to be included
+##'     included in the query (e.g. to limit the scope of the search
+##'     to particular nodes in the taxonomy)
+##' @return Returns an object of class ENAdownload. Thi is a list
+##'     containing filenames (files), the URLs the files were
+##'     downloaded from (URLs) and the number of expected sequences in
+##'     the database that should be downloaded (should_be)
 ##' @author Emanuel Heitlinger
 ##' @importFrom utils download.file
 ##' @export
@@ -58,7 +71,7 @@ getENAdownloads <- function(marker,
                 "in case of discrepanicies you may want to ", 
                 "delete files or give different downloadDir to repeat the download!\n"
                 )
-        return(list(files=files, URLs=URLs, should_be=count))
+        return(.ENAdownload(files, URLs, count))
     }
     if (sum(file.exists(files))>0){
         stop("some files in ", downloadDir, " exist, ",
@@ -70,6 +83,68 @@ getENAdownloads <- function(marker,
             download.file(URLs[[i]], files[[i]])
         }
     }
-    list(files=files, URLs=URLs, should_be=count)
+    return(.ENAdownload(files, URLs, count))
 }
 
+
+##' Constructor function for the ENAdownload class
+##'
+##' This constructs objects of the class ENAdownload
+##' @title .ENAdownload
+##' @param files path where files are stored
+##' @param URLs URL from which each file is downloaded
+##' @param should_be number of sequences that should be retrived from
+##'     these files
+##' @return an object of the class ENAdownload
+##' @author Emanuel Heitlinger
+.ENAdownload <- function (files, URLs, should_be) {
+    if(!is.numeric(should_be)){
+        stop("number of expected sequences has to be numeric \n",
+             "report an issue on github and refer to this message")
+    }
+    if(!length(files)==length(URLs)){
+        stop("number of downloaded files does not equal the number \n",
+             "URLs created report an issue on github and refer to this message")
+    }
+    DL <- list(files=files, URLs=URLs, should_be=should_be)
+    class(DL) <- append(class(DL), "ENAdownload")
+    return(DL)
+}
+
+##' Accessor function for ENAdownload class
+##'
+##' Access the files in an ENAdownload
+##' @title getFiles
+##' @param ENAdownload the ENAdownload object to be accessed
+##' @return a vector of filenames
+##' @export
+##' @author Emanuel Heitlinger
+getFiles <- function (ENAdownload) {
+    ENAdownload[["files"]]
+}
+
+
+##' Accessor function for ENAdownload class
+##'
+##' Access the number of expected sequences in an ENAdownload
+##' @title getShouldBe
+##' @param ENAdownload the ENAdownload object to be accessed
+##' @return a numeric indicating the number of expected sequences in
+##'     an ENAdownload
+##' @export
+##' @author Emanuel Heitlinger
+getShouldBe <- function(ENAdownload) {
+    ENAdownload[["should_be"]]
+}
+
+##' Accessor function for ENAdownload class
+##'
+##' Access the URLs in an ENAdownload
+##' @title getURLs
+##' @param ENAdownload the ENAdownload object to be accessed
+##' @return a vector of URLs
+##' @export
+##' @author Emanuel Heitlinger
+getURLs <- function (ENAdownload) {
+    ENAdownload[["URLs"]]
+}

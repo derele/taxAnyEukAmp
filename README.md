@@ -42,7 +42,7 @@ Downloaded files can be read into Biostring "DNAStringSet instances"
 for subsequent work.
 
 ```S
-X18Seq <- Biostrings::readDNAStringSet(X18SDownloads[[1]])
+X18Seq <- Biostrings::readDNAStringSet(getFiles(X18SDownloads))
 ```
 
 Before download the function also queries the database for the number
@@ -55,7 +55,7 @@ sequences available. Especially in this case we should check how many
 sequences are available. 
 
 ```S
-length(X18Seq) - X18SDownloads[["should_be"]] 
+length(X18Seq) - getShouldBe(X18SDownloads)
 ```
 
 ### Curate the database

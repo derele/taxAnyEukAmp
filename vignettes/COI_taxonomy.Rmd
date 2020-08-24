@@ -1,0 +1,90 @@
+---
+title: "COI_taxonomy"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{COI_taxonomy}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+In this vignette we will construct a taxonmic traing "database" for
+the Cytochrome C oxidase (the "Folmer region" of it to be accurate,
+which is the region most commonly sequenced as a "DNA barcode").
+
+```{r setup}
+library(taxAnyEukAmp)
+```
+
+After loading the package we count (query the database for their
+numer) and download the sequences. As COI is a protein coding marker
+we have to query the respective data ("coding release"). We read the
+resulting downloaded files into a DNAStringSet and check whether the
+number of seequences in the download fits with our expectation from
+the database query.
+
+The remaining processing is similar to non-coding (rRNA) sequences.
+
+```{r download-clean}
+COIDownloads <- getENAdownloads("COX1", "/SAN/db/ENA_marker/COI/", data = "coding_release")
+COISeq <- Biostrings::readDNAStringSet(getFiles(COIDownloads))
+length(COISeq) - getShouldBe(COIDownloads)
+
+nonACGT <- !isACGT(as.character(COISeq))
+
+accessions <- getAccession4ENAname(names(COISeq))
+TaxIDs <- taxonomizr::accessionToTaxa(accessions, "/SAN/db/taxonomy/taxonomizr.sql")
+duplicates <- duplicated(COISeq)&duplicated(TaxIDs)           
+
+table(is.na(TaxIDs))
+table(duplicates)
+```
+
+
+
+```{r taxon-clean}
+taxonomy <- taxonomizr::getTaxonomy(TaxIDs, "/SAN/db/taxonomy/taxonomizr.sql")
+rownames(taxonomy) <- names(COISeq)
+         
+badTaxa <- getBadTaxa(taxonomy, fromN=2)
+badSpecies <- getBadSpecies(taxonomy)         
+table(badTaxa, badSpecies)
+```
+
+```{r align-clean}
+COIClean <- COISeq[!nonACGT & !duplicates & !badTaxa & !badSpecies &
+                    width(COISeq)>600] ## this excludes below 600 bases
+
+taxonomyClean <- taxonomy[!nonACGT & !duplicates & !badTaxa & !badSpecies
+                          & width(COISeq)>600, ]  
+
+COIMatrices <- getMatrices(COIClean, taxonomyClean, mc.cores=20)
+
+outliers <- getOutliers(COIMatrices)
+
+subsequences <- getSubsequeces(COIMatrices, COIClean, mc.cores=20)
+
+table(outliers=names(COIClean)%in%outliers,
+      subseq=names(COIClean)%in%subsequences)
+
+COICurated <- COIClean[!names(COIClean)%in%outliers &
+                       !names(COIClean)%in%subsequences]
+
+taxonomyCurated <- taxonomyClean[!rownames(taxonomyClean)%in%outliers &
+                                 !rownames(taxonomyClean)%in%subsequences, ]
+
+```
+
+```{r train-clean}
+IdTaxaResultsCOI <- idTaxaTrainAndClean(COICurated, 
+                                        taxonomyCurated,
+                                        badRetain=100)
+
+```
+
