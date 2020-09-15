@@ -14,16 +14,17 @@
 ##' @param taxonomy taxonomy datafraome (usually from the taxonomizr
 ##'     package)
 ##' @return a taxedSeq object
+##' @export
 ##' @author Emanuel Heitlinger
-createTaxedSeq <- function(sequences, taxIDs, taxonomy) {
+createTaxedSeq <- function(sequences, taxonomy) {
     if(!class(sequences)%in%"DNAStringSet"){
         stop("sequence must be provided as DNAStringSet object")
     }
-    if(!length(taxIDs)==nrow(taxonomy)){
-        stop("taxIDs and taxonomy are incongruent")
+    if(!length(sequences)==nrow(taxonomy)){
+        stop("sequences and taxonomy are incongruent")
     }
-    taxedSeq <- list(sequences=sequences, taxIDs=taxIDs, taxonomy=taxonomy)
-    class(taxedSeq) <- append(class(taxedSeq), "taxedSeq")
+    taxedSeq <- list(sequences=sequences, taxonomy=taxonomy)
+    class(taxedSeq) <- "taxedSeq"
     return(taxedSeq)
 }
 
@@ -36,8 +37,29 @@ createTaxedSeq <- function(sequences, taxIDs, taxonomy) {
 ##' @export
 ##' @author Emanuel Heitlinger
 print.taxedSeq <- function (taxedSeq){
+    cat("class", class(taxedSeq), "object, consiting of:\n")
     print (taxedSeq[["sequences"]])
-    print(head(taxedSeq[["taxonomy"]], n=4))
-    cat( "... ", nrow(taxedSeq[["taxonomy"]]) - 8, " more rows ... \n")
-    print(tail(taxedSeq[["taxonomy"]], n=4))
+    cat("taxonomy data frame:\n")
+    if (nrow(taxedSeq[["taxonomy"]])>10){
+        print(head(taxedSeq[["taxonomy"]], n=5))
+        cat( "... ", nrow(taxedSeq[["taxonomy"]]) - 10, " more rows ... \n")
+        print(tail(taxedSeq[["taxonomy"]], n=5))
+    } else{print(taxedSeq[["taxonomy"]])}
 }
+
+
+##' Subset taxedSeq objects
+##'
+##' Subsetting an object of class taxedSeq
+##' @title 
+##' @param x object of class taxedSeq
+##' @param i index usedf for subsetting
+##' @param taxedSeq an object of class taxedSeq to be subsetted
+##' @return subsetted object of class taxedSeq
+##' @author Emanuel Heitlinger
+subselectTaxedSeq <- function (x, i){
+    createTaxedSeq(sequences = x[["sequences"]][i],
+                   taxonomy = x[["taxonomy"]][i, ])
+}
+
+

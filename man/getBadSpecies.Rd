@@ -24,7 +24,7 @@ Identify uniformative species annotations based on a taxonomy
 table from taxonomizr.
 }
 \details{
-Some sequences from databases have uninformative taxnomical
+Some sequences from databases have uninformative taxonomical
 annotation. This function can be used to idetnify those sequences,
 it returns a logical indicating whether the species taxonomy for
 an entry was uniformative.

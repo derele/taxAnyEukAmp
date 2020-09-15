@@ -1,13 +1,14 @@
 ##' Identify uninformative annotations ("bad" taxa) based on a taxonomy
 ##' table from taxonomizr
 ##'
-##' Some sequences from databases have uninformative taxnomical
+##' Some sequences from databases have uninformative taxonomical
 ##' annotation. This function can idetnify those sequences and returns
 ##' a logical indicating whether the taxonomy for an entry was
 ##' uniformative.
 ##' 
 ##' @title getBadTaxa
-##' @param taxonomy from taxonomizr::getTaxonomy
+##' @param taxonomy matrix of annotations from taxonomizr::getTaxonomy
+##'     including a "species" column
 ##' @param fromN perform screening only for taxa with more abundant in
 ##'     the dataset than fromN (set to 0 to disable).
 ##' @param allowedNA the number of meaningless annotations allowed
@@ -22,6 +23,7 @@
 getBadTaxa <- function(taxonomy, fromN=10, allowedNA=3,
                        badstring = c("uncultured", "sp\\.", "environmental", "sample",
                                      "unidentified")){
+    taxonomy <- .checkTaxonomy(taxonomy)
     nSp <- table(taxonomy[, "species"])
     fromSp <- nSp[nSp > fromN]
     tnmy <- taxonomy[taxonomy[, "species"]%in%names(fromSp), ]
@@ -36,7 +38,7 @@ getBadTaxa <- function(taxonomy, fromN=10, allowedNA=3,
 ##' Identify uniformative species annotations based on a taxonomy
 ##' table from taxonomizr.
 ##'
-##' Some sequences from databases have uninformative taxnomical
+##' Some sequences from databases have uninformative taxonomical
 ##' annotation. This function can be used to idetnify those sequences,
 ##' it returns a logical indicating whether the species taxonomy for
 ##' an entry was uniformative.
@@ -53,10 +55,30 @@ getBadSpecies <- function(taxonomy,
                        badstring = c("uncultured", "sp\\.",
                                      "environmental", "sample",
                                      "unidentified")){
-        badregex <- paste(badstring, collapse="|")
-        sP <- taxonomy[, "species"]
-        sP[grepl(badregex, sP)] <-NA
-        is.na(sP)
+    taxonomy <- .checkTaxonomy(taxonomy)
+    badregex <- paste(badstring, collapse="|")
+    sP <- taxonomy[, "species"]
+    sP[grepl(badregex, sP)] <-NA
+    is.na(sP)
 }
         
-    
+##' Internal function checking the content of a taxonomy matrix
+##'
+##' This internal function extracts the taxonomy table from a taxedSeq
+##' object and checks whether the rquired species column is given in a
+##' taxonomy table.
+##' @title .checkTaxonomy
+##' @param taxonomy from taxonomizr::getTaxonomy or a taxedSeq object
+##'     containing this taxonomy
+##' @return a taxonomy matrix
+##' @author Emanuel Heitlinger
+.checkTaxonomy <- function(taxonomy){
+    if("taxedSeq" %in% class(taxonomy)) {
+        taxonomy <- taxonomy[["taxonomy"]]
+    }
+    if(!"matrix" %in% class(taxonomy)  |
+       ! "species" %in% colnames(taxonomy) ){
+        stop("please provide a matrix of taxonomy annotations or a taxedSeq object")
+    }
+    taxonomy
+}

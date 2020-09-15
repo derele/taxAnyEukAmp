@@ -4,15 +4,15 @@
 \alias{getOutliers}
 \title{getOutliers}
 \usage{
-getOutliers(matrices, cutoff = 0.1)
+getOutliers(matrices, DNAdata, cutoff = 0.1)
 }
 \arguments{
 \item{matrices}{A list of distance matrices from getMatrices}
 
+\item{DNAdata}{A XString set of DNA or RNA sequences or a taxedSeq object}
+
 \item{cutoff}{percent difference in the distance matrix above
 which a sequence is considered an outlier}
-
-\item{DNAdata}{A XString set of DNA or RNA sequences}
 
 \item{taxonomy}{from taxonomizr::getTaxonomy}
 }

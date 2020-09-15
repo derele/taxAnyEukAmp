@@ -50,41 +50,42 @@ table(duplicates)
 
 ```{r taxon-clean}
 taxonomy <- taxonomizr::getTaxonomy(TaxIDs, "/SAN/db/taxonomy/taxonomizr.sql")
-rownames(taxonomy) <- names(COISeq)
+
+## we can store this conveniently in one object to work with without
+## keeping track of sequences and taxnomy seperately
+COISeqtaxed <- createTaxedSeq(COISeq, taxonomy)
+
          
-badTaxa <- getBadTaxa(taxonomy, fromN=2)
-badSpecies <- getBadSpecies(taxonomy)         
+badTaxa <- getBadTaxa(COISeqtaxed, fromN=2)
+badSpecies <- getBadSpecies(COISeqtaxed)         
 table(badTaxa, badSpecies)
 ```
 
 ```{r align-clean}
-COIClean <- COISeq[!nonACGT & !duplicates & !badTaxa & !badSpecies &
-                    width(COISeq)>600] ## this excludes below 600 bases
+COIClean <- subselectTaxedSeq(COISeqtaxed,
+                             !nonACGT & !duplicates & !badTaxa & !badSpecies &
+                             width(COISeq)>600) ## this excludes below 600 bases
 
-taxonomyClean <- taxonomy[!nonACGT & !duplicates & !badTaxa & !badSpecies
-                          & width(COISeq)>600, ]  
 
-COIMatrices <- getMatrices(COIClean, taxonomyClean, mc.cores=20)
 
-outliers <- getOutliers(COIMatrices)
+COIMatrices <- getMatrices(COIClean, mc.cores=20)
 
+outliers <- getOutliers(COIMatrices, COIClean)
 subsequences <- getSubsequeces(COIMatrices, COIClean, mc.cores=20)
 
-table(outliers=names(COIClean)%in%outliers,
-      subseq=names(COIClean)%in%subsequences)
+table(outliers, subsequences)
 
-COICurated <- COIClean[!names(COIClean)%in%outliers &
-                       !names(COIClean)%in%subsequences]
-
-taxonomyCurated <- taxonomyClean[!rownames(taxonomyClean)%in%outliers &
-                                 !rownames(taxonomyClean)%in%subsequences, ]
-
+COICurated <- subselectTaxedSeq(COIClean, !outliers & !subsequences)
 ```
 
 ```{r train-clean}
 IdTaxaResultsCOI <- idTaxaTrainAndClean(COICurated, 
                                         taxonomyCurated,
                                         badRetain=100)
+
+writeFasta(IdTaxaResultsCOI[[1]], "/SAN/db/blastdb/COI_ENA/Length_600.fasta")
+
+saveRDS(IdTaxaResultsCOI[[3]], "/SAN/db/IdTaxa/COI_Lenght600.rds")
 
 ```
 

@@ -12,7 +12,8 @@ getBadTaxa(
 )
 }
 \arguments{
-\item{taxonomy}{from taxonomizr::getTaxonomy}
+\item{taxonomy}{matrix of annotations from taxonomizr::getTaxonomy
+including a "species" column}
 
 \item{fromN}{perform screening only for taxa with more abundant in
 the dataset than fromN (set to 0 to disable).}
@@ -33,7 +34,7 @@ Identify uninformative annotations ("bad" taxa) based on a taxonomy
 table from taxonomizr
 }
 \details{
-Some sequences from databases have uninformative taxnomical
+Some sequences from databases have uninformative taxonomical
 annotation. This function can idetnify those sequences and returns
 a logical indicating whether the taxonomy for an entry was
 uniformative.

@@ -4,12 +4,10 @@
 \alias{getMatrices}
 \title{getMatrices}
 \usage{
-getMatrices(DNAdata, taxonomy, mc.cores = 1)
+getMatrices(taxedSeq, mc.cores = 1)
 }
 \arguments{
-\item{DNAdata}{A XString set of DNA or RNA sequences}
-
-\item{taxonomy}{from taxonomizr::getTaxonomy}
+\item{taxedSeq}{A taxedSeq object}
 
 \item{mc.cores}{number of threads/processor used. This works only
 on UNIX systems via the package parallel.}

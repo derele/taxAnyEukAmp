@@ -84,7 +84,7 @@ duplicated sequences for the same taxon.
 
 ```S
 accessions <- getAccession4ENAname(names(X18Seq))
-TaxIDs <- taxonomizr::accessionToTaxa(accessions, "/SAN/db/taxonomy/taxonomizr.sql")
+TaxIDs <- taxonomizr::accessionToTaxa(accessions, "/SAN/db/taxonomy/version20191014/taxonomizr.sql")
 duplicates <- duplicated(X18Seq) & duplicated(TaxIDs)           
 ```
 
@@ -97,13 +97,12 @@ through the taxonomizr package). By default this comprises the ranks
 ```S
 taxonomy <- taxonomizr::getTaxonomy(TaxIDs, "/SAN/db/taxonomy/taxonomizr.sql")
 
-X18Staxed <- createTaxedSeq(X18Seq, TaxIDs, taxonomy)
+## we can store this conveniently in one object to work with without
+## keeping track of sequences and taxnomy seperately
+X18Staxed <- createTaxedSeq(X18Seq, taxonomy)
 
-### the object will take care...          
-### rownames(taxonomy) <- names(X18Seq)
-          
-badTaxa <- getBadTaxa(taxonomy, fromN=2)
-badSpecies <- getBadSpecies(taxonomy)         
+badTaxa <- getBadTaxa(X18Staxed, fromN=2)
+badSpecies <- getBadSpecies(X18Staxed)         
 table(badTaxa, badSpecies)
 ```
 
@@ -126,11 +125,9 @@ simply decide to only use sequneces of a certain length (i.e. when
 building a [close to] full length database).
 
 ```S
-X18SClean <- X18Seq[!nonACGT & !duplicates & !badTaxa & !badSpecies &
-                    width(X18Seq)>1500] ## this excludes below 1500 bases
-
-taxonomyClean <- taxonomy[!nonACGT & !duplicates & !badTaxa & !badSpecies
-                          & width(X18Seq)>1500, ]  
+X18StaxedClean <- subselectTaxedSeq(X18Staxed,
+                                    !nonACGT & !duplicates & !badTaxa & !badSpecies &
+                                     width(X18Seq)>1500)
 ```
 
 #### Sequence similarity curration
@@ -147,30 +144,19 @@ remove simlilar sub-sequences at a clustering threshold
 
 
 ```S
-X18SMatrices <- getMatrices(X18SClean, taxonomyClean, mc.cores=20)
+X18SMatrices <- getMatrices(X18StaxedClean, mc.cores=20)
 
-outliers <- getOutliers(X18SMatrices)
+outliers <- getOutliers(X18SMatrices, X18StaxedClean)
 
-subsequences <- getSubsequeces(X18SMatrices, X18SClean, mc.cores=20)
+subsequences <- getSubsequeces(X18SMatrices, X18StaxedClean, mc.cores=20)
 
-table(outliers=names(X18SClean)%in%outliers,
-      subseq=names(X18SClean)%in%subsequences)
+table(outliers, subseqences)
 
-X18SCurated <- X18SClean[!names(X18SClean)%in%outliers &
-                         !names(X18SClean)%in%subsequences]
-
-taxonomyCurated <- taxonomyClean[!rownames(taxonomyClean)%in%outliers &
-                                 !rownames(taxonomyClean)%in%subsequences, ]
+X18SCurated <- subselectTaxedSeq(X18StaxedClean,
+                                 !outliers & !subsequences)
 
                          
 ```
-
-Not that (in contrast to the procedure above, in which we just
-obtained an index for sequences to remove) we obtain the sequence
-names here. This is to make sure that those sequences can be removed
-irrespective of the order of sequences (i.e. from the original and/or
-the otherwise cleand datasets).
-
 
 ### IdTaxa (DECIPHER) curration and training set
 
