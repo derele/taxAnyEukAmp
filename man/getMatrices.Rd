@@ -7,7 +7,8 @@
 getMatrices(taxedSeq, mc.cores = 1)
 }
 \arguments{
-\item{taxedSeq}{A taxedSeq object}
+\item{taxedSeq}{A taxedSeq object containing a DNAstingSet and an
+associated taxonomy}
 
 \item{mc.cores}{number of threads/processor used. This works only
 on UNIX systems via the package parallel.}

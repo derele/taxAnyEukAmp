@@ -62,23 +62,3 @@ getBadSpecies <- function(taxonomy,
     is.na(sP)
 }
         
-##' Internal function checking the content of a taxonomy matrix
-##'
-##' This internal function extracts the taxonomy table from a taxedSeq
-##' object and checks whether the rquired species column is given in a
-##' taxonomy table.
-##' @title .checkTaxonomy
-##' @param taxonomy from taxonomizr::getTaxonomy or a taxedSeq object
-##'     containing this taxonomy
-##' @return a taxonomy matrix
-##' @author Emanuel Heitlinger
-.checkTaxonomy <- function(taxonomy){
-    if("taxedSeq" %in% class(taxonomy)) {
-        taxonomy <- taxonomy[["taxonomy"]]
-    }
-    if(!"matrix" %in% class(taxonomy)  |
-       ! "species" %in% colnames(taxonomy) ){
-        stop("please provide a matrix of taxonomy annotations or a taxedSeq object")
-    }
-    taxonomy
-}

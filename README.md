@@ -150,12 +150,10 @@ outliers <- getOutliers(X18SMatrices, X18StaxedClean)
 
 subsequences <- getSubsequeces(X18SMatrices, X18StaxedClean, mc.cores=20)
 
-table(outliers, subseqences)
+table(outliers, subsequences)
 
 X18SCurated <- subselectTaxedSeq(X18StaxedClean,
                                  !outliers & !subsequences)
-
-                         
 ```
 
 ### IdTaxa (DECIPHER) curration and training set
@@ -172,9 +170,8 @@ reomved consider screening your input data more stringently for
 subsequences, "bad taxa" or short sequences. 
 
 
-```
-IdTaxaResults <- idTaxaTrainAndClean(X18SCurated, 
-                                     taxonomyCurated,
+```S
+IdTaxaResults2 <- idTaxaTrainAndClean(X18SCurated, 
                                      badRetain=10)
 ```
 

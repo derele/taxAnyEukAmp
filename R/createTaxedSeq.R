@@ -63,3 +63,45 @@ subselectTaxedSeq <- function (x, i){
 }
 
 
+##' Check for a DNAstringSet potentially within a taxedSeq object
+##'
+##' This internal function checks for a DNAstringSet or taxedSeq
+##' object. If hte latter, it etextracts this DNAStringSet
+##'
+##' @title .checkSequences
+##' @param DNAdata taxedSeq object containing a DNAStringSet or only
+##'     the latter
+##' @return A DNAStringSet
+##' @author Emanuel Heitlinger
+.checkSequences <- function(DNAdata){
+    if("taxedSeq" %in% class(DNAdata)) {
+        DNAdata <- DNAdata[["sequences"]]
+    }
+    if(!"DNAStringSet" %in% class(DNAdata)){
+        stop("please provide a DNAStrinSet or a taxedSeq object containing one")
+    }
+    DNAdata
+}
+
+
+##' Extract and check the content of a taxonomy matrix from a taxedSeq
+##' object
+##' 
+##' This function extracts the taxonomy table from a taxedSeq object
+##' and checks whether the rquired species column is given in a
+##' taxonomy table.
+##' @title .checkTaxonomy
+##' @param taxonomy from taxonomizr::getTaxonomy or a taxedSeq object
+##'     containing this taxonomy
+##' @return a taxonomy matrix
+##' @author Emanuel Heitlinger
+.checkTaxonomy <- function(taxonomy){
+    if("taxedSeq" %in% class(taxonomy)) {
+        taxonomy <- taxedSeq[["taxonomy"]]
+    }
+    if(!"matrix" %in% class(taxonomy)  |
+       ! "species" %in% colnames(taxonomy) ){
+        stop("please provide a matrix of taxonomy annotations or a taxedSeq object containing such a matrix")
+    }
+    taxonomy
+}

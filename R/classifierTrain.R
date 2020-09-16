@@ -4,9 +4,8 @@
 ##' recursively trains the classifier removing problem sequences in
 ##' each iteration.
 ##' @title idTaxaTrainAndClean
-##' @param DNAdata DNAStringSet of sequences to be used for training
-##' @param TAXdata the taxonomic annotation in a dataframe as obtained
-##'     from the taxonomizr package
+##' @param taxedSeq An object of class taxedSeq containing a DNAStringSet and 
+##'     matching taxonomy
 ##' @param normalizeSize integer indicating to use only this number of
 ##'     sequences in case of mutliple sequnces for the same taxon
 ##' @param badRetain postiv integer indicating to repeat classifier
@@ -18,33 +17,34 @@
 ##' @importFrom DECIPHER LearnTaxa
 ##' @export
 ##' @author Emanuel Heitlinger
-idTaxaTrainAndClean <- function (DNAdata, TAXdata,
+idTaxaTrainAndClean <- function (taxedSeq,
                                  normalizeSize=10,
                                  badRetain=100
                                  ) {
+    DNAdata <- .checkSequences(taxedSeq)
+    TAXdata <- .checkTaxonomy(taxedSeq)
 
-
-    ## specific formatting for training data
+    ## specific formatting of taxonomy for training data
     TAXdata[, "species"] <- gsub(".*? (.*)", "\\1",
                                           TAXdata[, "species"])
     TaxonomyDNAStringSet <- apply(TAXdata, 1, paste, collapse="; ")
     TaxonomyDNAStringSet <- paste("Root", TaxonomyDNAStringSet, sep="; ")
 
     ## first normalize group size for each taxon
-    normalizeBigGroups <- function (Taxonomy, maxGroupSize) {
+    normalizeBigGroups <- function (Taxonomy, normalizeSize) {
         groupCounts <- table(Taxonomy)        
         remove <- logical(length(Taxonomy))
-        for (i in which(groupCounts > maxGroupSize)) {
+        for (i in which(groupCounts > normalizeSize)) {
             index <- which(Taxonomy==names(groupCounts)[i])
             keep <- sample(length(index),
-                           maxGroupSize)
+                           normalizeSize)
             remove[index[-keep]] <- TRUE
         }
         remove
     }
     
     removeNormData <- normalizeBigGroups(TaxonomyDNAStringSet,
-                                         maxGroupSize = normalizeSize)
+                                         normalizeSize = normalizeSize)
 
 ## remove taxa which cause problems... see ClassifySequences vignette
 ## of DECIPHER. We do this recursively but also exhaustively!

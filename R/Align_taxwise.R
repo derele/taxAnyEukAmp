@@ -3,17 +3,18 @@
 ##' Alignments are created for each species seperately, if the species
 ##' has multiple sequences in the dataset
 ##' @title getMatrices
-##' @param taxedSeq A taxedSeq object
+##' @param taxedSeq A taxedSeq object containing a DNAstingSet and an
+##'     associated taxonomy
 ##' @param mc.cores number of threads/processor used. This works only
-##'     on UNIX systems via the package parallel. 
+##'     on UNIX systems via the package parallel.
 ##' @return a list of distance matrices
 ##' @importFrom DECIPHER AlignSeqs
 ##' @importFrom DECIPHER DistanceMatrix
 ##' @export
 ##' @author Emanuel Heitlinger
 getMatrices <- function (taxedSeq, mc.cores=1) { 
-    taxonomy <- .checkTaxonomy(taxedSeq[["taxonomy"]])
-    DNAdata <- taxedSeq[["sequences"]]
+    taxonomy <- .checkTaxonomy(taxedSeq)
+    DNAdata <- .checkSequences(taxedSeq)
     nSeqTax <- table(taxonomy[, "species"])
     repSeqTax <- names(nSeqTax[nSeqTax>1])
     DmatList <- mclapply(repSeqTax, function (spec){
@@ -31,7 +32,8 @@ getMatrices <- function (taxedSeq, mc.cores=1) {
 ##' Based on distance matrices for each species (see getMatrices)
 ##' @title getOutliers
 ##' @param matrices A list of distance matrices from getMatrices
-##' @param DNAdata A XString set of DNA or RNA sequences or a taxedSeq object
+##' @param DNAdata A DNAstrinSet or a taxedSeq object containg such
+##'     DNA sequence data
 ##' @param cutoff percent difference in the distance matrix above
 ##'     which a sequence is considered an outlier
 ##' @param taxonomy from taxonomizr::getTaxonomy
@@ -49,7 +51,8 @@ getOutliers <- function (matrices, DNAdata, cutoff=0.1){
     ## but not if are only 2x2 matrices with only two sequences not clear
     ## which one is the outlier
     twos <- unlist(lapply(matrices, function (x) dim(x)[[1]]==2))
-    ## we can't do anything against the outlers in 2x2 matrices
+    ## we can't do anything against the outliers in 2x2 matrices as we
+    ## don't know which is the correct version
     outliers <- unlist(lapply(outliersList[!twos], function (x) names(x)[x]))
     names(DNAdata)%in%outliers
 }
@@ -70,6 +73,7 @@ getOutliers <- function (matrices, DNAdata, cutoff=0.1){
 ##' @return a vector strings representing names of subsequences in the
 ##'     original dataset shorter than other sequences for the same
 ##'     species
+##' @export
 ##' @importFrom DECIPHER IdClusters
 ##' @author Emanuel Heitlinger
 getSubsequeces <- function(matrices, DNAdata, cutoff=0, mc.cores=1){ 
@@ -92,38 +96,5 @@ getSubsequeces <- function(matrices, DNAdata, cutoff=0, mc.cores=1){
     names(DNAdata)%in%subsequences
 }
 
-
-##' Get the sequences names from a taxedSeq object 
-##'
-##' Simply extracts the names from the DNAstringSet of a taxedSeq
-##' object (or of the DNAStringSet directly)
-##' @title getSeqnames
-##' @param taxedSeq a taxedSeq object 
-##' @return a vector of names
-##' @author Emanuel Heitlinger
-getSeqnames <- function (taxedSeq) {
-    DNA <- .checkSequences(taxedSeq)
-    names(DNA)
-}
-
-##' Check for a DNAstringSet potentially within a taxedSeq object
-##'
-##' This internal function checks for a DNAstringSet or taxedSeq
-##' object. If hte latter, it etextracts this DNAStringSet
-##'
-##' @title .checkSequences
-##' @param DNAdata taxedSeq object containing a DNAStringSet or only
-##'     the latter
-##' @return A DNAStringSet
-##' @author Emanuel Heitlinger
-.checkSequences <- function(DNAdata){
-    if("taxedSeq" %in% class(DNAdata)) {
-        DNAdata <- DNAdata[["sequences"]]
-    }
-    if(!"DNAStringSet" %in% class(DNAdata)){
-        stop("please provide a DNAStrinSet or a taxedSeq object containing one")
-    }
-    DNAdata
-}
 
 

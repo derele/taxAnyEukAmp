@@ -4,13 +4,11 @@
 \alias{idTaxaTrainAndClean}
 \title{idTaxaTrainAndClean}
 \usage{
-idTaxaTrainAndClean(DNAdata, TAXdata, normalizeSize = 10, badRetain = 100)
+idTaxaTrainAndClean(taxedSeq, normalizeSize = 10, badRetain = 100)
 }
 \arguments{
-\item{DNAdata}{DNAStringSet of sequences to be used for training}
-
-\item{TAXdata}{the taxonomic annotation in a dataframe as obtained
-from the taxonomizr package}
+\item{taxedSeq}{An object of class taxedSeq containing a DNAStringSet and 
+matching taxonomy}
 
 \item{normalizeSize}{integer indicating to use only this number of
 sequences in case of mutliple sequnces for the same taxon}
